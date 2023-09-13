@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import timedelta
 from typing import Any
 
 from singer_sdk.authenticators import APIKeyAuthenticator
@@ -53,8 +52,10 @@ class LinearStream(GraphQLStream):
         Returns:
             A dictionary of URL params.
         """
-        next_second = self.get_starting_timestamp(context) + timedelta(seconds=1)
-        return {
-            "next": next_page_token,
-            "replicationKeyValue": next_second.strftime("%Y-%m-%dT%H:%M:%SZ"),
-        }
+        params = {"next": next_page_token}
+
+        if starting_timestamp := self.get_starting_timestamp(context):
+            replication_key_value = starting_timestamp.strftime("%Y-%m-%dT%H:%M:%SZ")
+            params["replicationKeyValue"] = replication_key_value
+
+        return params
