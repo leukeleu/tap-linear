@@ -2,18 +2,19 @@
 
 import datetime
 
-from singer_sdk.testing import get_tap_test_class
+from singer_sdk.testing.legacy import get_standard_tap_tests
 
 from tap_linear.tap import TapLinear
 
 SAMPLE_CONFIG = {
-    "start_date": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d"),
+    "start_date": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d"),
     "auth_token": "test",
 }
 
 
-# Run standard built-in tap tests from the SDK:
-TestTapLinear = get_tap_test_class(
-    tap_class=TapLinear,
-    config=SAMPLE_CONFIG,
-)
+def test_standard_tap_tests(requests_mock) -> None:  # noqa: ANN001
+    """Run standard built-in tap tests from the SDK."""
+    requests_mock.post("/graphql", json={"data": {"results": {"nodes": []}}})
+    tests = get_standard_tap_tests(TapLinear, config=SAMPLE_CONFIG)
+    for test in tests:
+        test()
