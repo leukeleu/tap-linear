@@ -44,6 +44,7 @@ class TapLinear(Tap):
         """
         return [
             streams.CyclesStream(self),
+            streams.IssuesStream(self),
             streams.CommentStream(self),
         ]
 

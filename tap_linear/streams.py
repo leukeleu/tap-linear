@@ -31,15 +31,10 @@ class CyclesStream(LinearStream):
         th.Property("updatedAt", th.DateTimeType),
         th.Property(
             "uncompletedIssuesUponClose",
-            th.ObjectType(
-                th.Property(
-                    "nodes",
-                    th.ArrayType(
-                        th.ObjectType(
-                            th.Property("id", th.StringType),
-                            th.Property("identifier", th.StringType),
-                        ),
-                    ),
+            th.ArrayType(
+                th.ObjectType(
+                    th.Property("id", th.StringType),
+                    th.Property("identifier", th.StringType),
                 ),
             ),
         ),
@@ -52,7 +47,7 @@ class CyclesStream(LinearStream):
             cycles(
                 first: 100
                 after: $next
-                filter: { updatedAt: {gt: $replicationKeyValue } }
+                filter: { updatedAt: { gt: $replicationKeyValue } }
             ) {
                 nodes {
                     id
@@ -88,6 +83,132 @@ UserType = th.ObjectType(
     th.Property("name", th.StringType),
     th.Property("email", th.StringType),
 )
+
+
+class IssuesStream(LinearStream):
+    """Issues stream."""
+
+    name = "issues"
+    schema = th.PropertiesList(
+        th.Property("id", th.StringType),
+        th.Property("identifier", th.StringType),
+        th.Property("title", th.StringType),
+        th.Property("description", th.StringType),
+        th.Property("priority", th.NumberType),
+        th.Property("type", th.StringType),
+        th.Property(
+            "state",
+            th.ObjectType(
+                th.Property("id", th.StringType),
+                th.Property("name", th.StringType),
+                th.Property("type", th.StringType),
+            ),
+        ),
+        th.Property("estimate", th.NumberType),
+        th.Property("createdAt", th.DateTimeType),
+        th.Property("updatedAt", th.DateTimeType),
+        th.Property("completedAt", th.DateTimeType),
+        th.Property("archivedAt", th.DateTimeType),
+        th.Property("assignee", UserType),
+        th.Property("creator", UserType),
+        th.Property(
+            "team",
+            th.ObjectType(
+                th.Property("id", th.StringType),
+                th.Property("name", th.StringType),
+                th.Property("key", th.StringType),
+            ),
+        ),
+        th.Property(
+            "project",
+            th.ObjectType(
+                th.Property("id", th.StringType),
+                th.Property("name", th.StringType),
+                th.Property("key", th.StringType),
+            ),
+        ),
+        th.Property(
+            "parent",
+            th.ObjectType(
+                th.Property("id", th.StringType),
+                th.Property("title", th.StringType),
+            ),
+        ),
+        th.Property(
+            "labels",
+            th.ArrayType(
+                th.ObjectType(
+                    th.Property("id", th.StringType),
+                    th.Property("name", th.StringType),
+                    th.Property("color", th.StringType),
+                ),
+            ),
+        ),
+    ).to_dict()
+
+    primary_keys: t.ClassVar[list[str]] = ["id"]
+    replication_key = "updatedAt"
+    query = """
+        query Issues($next: String, $replicationKeyValue: DateTime) {
+            issues(
+                first: 100
+                after: $next
+                filter: { updatedAt: { gt: $replicationKeyValue } }
+            ) {
+                nodes {
+                    id
+                    identifier
+                    title
+                    description
+                    priority
+                    state {
+                        id
+                        name
+                        type
+                    }
+                    estimate
+                    createdAt
+                    updatedAt
+                    completedAt
+                    archivedAt
+                    assignee {
+                        id
+                        name
+                        email
+                    }
+                    creator {
+                        id
+                        name
+                        email
+                    }
+                    team {
+                        id
+                        name
+                        key
+                    }
+                    project {
+                        id
+                        name
+                    }
+                    parent {
+                        id
+                        title
+                    }
+                    labels {
+                        nodes {
+                            id
+                            name
+                            color
+                        }
+                    }
+                }
+                pageInfo {
+                    hasNextPage
+                    endCursor
+                }
+            }
+        }
+    """
 
 
 class CommentStream(LinearStream):
