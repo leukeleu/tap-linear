@@ -144,6 +144,28 @@ class IssuesStream(LinearStream):
                 ),
             ),
         ),
+        th.Property(
+            "history",
+            th.ArrayType(
+                th.ObjectType(
+                    th.Property("id", th.StringType),
+                    th.Property("createdAt", th.DateTimeType),
+                    th.Property("updatedAt", th.DateTimeType),
+                    th.Property(
+                        "issue",
+                        th.ObjectType(
+                            th.Property("id", th.StringType),
+                        ),
+                    ),
+                    th.Property("actor", UserType),
+                    th.Property("fromCycleId", th.StringType),
+                    th.Property("toCycleId", th.StringType),
+                    th.Property("toAssigneeId", th.StringType),
+                    th.Property("fromStateId", th.StringType),
+                    th.Property("toStateId", th.StringType),
+                ),
+            ),
+        ),
     ).to_dict()
 
     primary_keys: t.ClassVar[list[str]] = ["id"]
@@ -151,7 +173,7 @@ class IssuesStream(LinearStream):
     query = """
         query Issues($next: String, $replicationKeyValue: DateTime) {
             issues(
-                first: 100
+                first: 35
                 after: $next
                 filter: { updatedAt: { gt: $replicationKeyValue } }
             ) {
@@ -199,6 +221,24 @@ class IssuesStream(LinearStream):
                             id
                             name
                             color
+                        }
+                    }
+                    history {
+                        nodes {
+                            id
+                            createdAt
+                            updatedAt
+                            issue {
+                                id
+                            }
+                            actor {
+                                id
+                            }
+                            fromCycleId
+                            toCycleId
+                            toAssigneeId
+                            fromStateId
+                            toStateId
                         }
                     }
                 }
