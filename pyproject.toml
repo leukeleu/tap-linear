@@ -36,6 +36,9 @@ ignore = [
 select = ["ALL"]
 src = ["tap_linear"]
 target-version = "py38"
+unfixable = [
+    "ERA001",  # commented out code
+]
 
 
 [tool.ruff.flake8-annotations]
