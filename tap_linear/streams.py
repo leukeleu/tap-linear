@@ -11,6 +11,7 @@ from tap_linear.client import LinearStream
 
 class CyclesStream(LinearStream):
     """Cycle stream."""
+
     name = "cycles"
     schema = th.PropertiesList(
         th.Property("id", th.StringType),
@@ -72,6 +73,62 @@ class CyclesStream(LinearStream):
                             identifier
                         }
                     }
+                }
+                pageInfo {
+                    hasNextPage
+                    endCursor
+                }
+            }
+        }
+    """
+
+
+UserType = th.ObjectType(
+    th.Property("id", th.StringType),
+    th.Property("name", th.StringType),
+    th.Property("email", th.StringType),
+)
+
+
+class CommentStream(LinearStream):
+    """Comment stream."""
+
+    name = "comments"
+    schema = th.PropertiesList(
+        th.Property("id", th.StringType),
+        th.Property("createdAt", th.DateTimeType),
+        th.Property("updatedAt", th.DateTimeType),
+        th.Property("user", UserType),
+        th.Property(
+            "issue",
+            th.ObjectType(
+                th.Property("id", th.StringType),
+            ),
+        ),
+    ).to_dict()
+
+    primary_keys: t.ClassVar[list[str]] = ["id"]
+    replication_key = "updatedAt"
+    query = """
+        query Comments($next: String, $replicationKeyValue: DateTime) {
+            comments(
+                first: 100
+                after: $next
+                filter: { updatedAt: { gt: $replicationKeyValue } }
+            ) {
+                nodes {
+                    id
+                    createdAt
+                    updatedAt
+                    user {
+                        id
+                        name
+                        email
+                    }
+                    issue {
+                        id
+                    }
+                    body
                 }
                 pageInfo {
                     hasNextPage
