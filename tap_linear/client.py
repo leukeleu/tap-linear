@@ -8,6 +8,8 @@ from singer_sdk.authenticators import APIKeyAuthenticator
 from singer_sdk.helpers._classproperty import classproperty
 from singer_sdk.streams import GraphQLStream
 
+from tap_linear.utils import flatten_node_lists
+
 
 class LinearStream(GraphQLStream):
     """Linear stream class."""
@@ -59,3 +61,14 @@ class LinearStream(GraphQLStream):
             params["replicationKeyValue"] = replication_key_value
 
         return params
+
+    def post_process(
+        self,
+        row: dict,
+        context: dict | None = None,  # noqa: ARG002
+    ) -> dict | None:
+        """Post-process row.
+
+        Flatten nested nodes lists.
+        """
+        return flatten_node_lists(row)
