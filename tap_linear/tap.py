@@ -32,6 +32,8 @@ class TapLinear(Tap):
             th.DateTimeType,
             description="The earliest record date to sync",
         ),
+        th.Property("stream_maps", th.ObjectType()),
+        th.Property("stream_map_config", th.ObjectType()),
     ).to_dict()
 
     def discover_streams(self) -> list[streams.LinearStream]:
