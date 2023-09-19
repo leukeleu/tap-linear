@@ -298,3 +298,48 @@ class CommentStream(LinearStream):
             }
         }
     """
+
+
+class UsersStream(LinearStream):
+    """Users stream."""
+
+    name = "users"
+    schema = th.PropertiesList(
+        th.Property("id", th.StringType),
+        th.Property("active", th.BooleanType),
+        th.Property("createdAt", th.DateTimeType),
+        th.Property("updatedAt", th.DateTimeType),
+        th.Property("displayName", th.StringType),
+        th.Property("email", th.StringType),
+        th.Property("guest", th.BooleanType),
+        th.Property("lastSeen", th.DateTimeType),
+        th.Property("name", th.StringType),
+    ).to_dict()
+
+    primary_keys: t.ClassVar[list[str]] = ["id"]
+    replication_key = "updatedAt"
+    query = """
+        query Users($next: String, $replicationKeyValue: DateTime) {
+            users(
+                first: 100
+                after: $next
+                filter: { updatedAt: { gt: $replicationKeyValue } }
+            ) {
+                nodes {
+                    id
+                    active
+                    createdAt
+                    updatedAt
+                    displayName
+                    email
+                    guest
+                    lastSeen
+                    name
+                }
+                pageInfo {
+                    hasNextPage
+                    endCursor
+                }
+            }
+        }
+    """
