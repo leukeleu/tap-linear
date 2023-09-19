@@ -109,6 +109,12 @@ class IssuesStream(LinearStream):
         th.Property("updatedAt", th.DateTimeType),
         th.Property("completedAt", th.DateTimeType),
         th.Property("archivedAt", th.DateTimeType),
+        th.Property(
+            "cycle",
+            th.ObjectType(
+                th.Property("id", th.StringType),
+            ),
+        ),
         th.Property("assignee", UserType),
         th.Property("creator", UserType),
         th.Property(
@@ -193,6 +199,9 @@ class IssuesStream(LinearStream):
                     updatedAt
                     completedAt
                     archivedAt
+                    cycle {
+                        id
+                    }
                     assignee {
                         id
                         name
