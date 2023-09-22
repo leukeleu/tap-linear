@@ -245,6 +245,7 @@ class IssuesStream(LinearStream):
                             }
                             fromCycleId
                             toCycleId
+                            fromAssigneeId
                             toAssigneeId
                             fromStateId
                             toStateId
