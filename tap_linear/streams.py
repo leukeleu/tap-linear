@@ -29,6 +29,7 @@ class CyclesStream(LinearStream):
         th.Property("endsAt", th.DateTimeType),
         th.Property("progress", th.NumberType),
         th.Property("updatedAt", th.DateTimeType),
+        th.Property("completedAt", th.DateTimeType),
         th.Property(
             "uncompletedIssuesUponClose",
             th.ArrayType(
@@ -62,6 +63,7 @@ class CyclesStream(LinearStream):
                     endsAt
                     progress
                     updatedAt
+                    completedAt
                     uncompletedIssuesUponClose {
                       nodes {
                             id
