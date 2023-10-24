@@ -355,3 +355,46 @@ class UsersStream(LinearStream):
             }
         }
     """
+
+
+class WorkflowStateStream(LinearStream):
+    """Workflow state stream."""
+
+    name = "workflowStates"
+    schema = th.PropertiesList(
+        th.Property("id", th.StringType),
+        th.Property("name", th.StringType),
+        th.Property("type", th.StringType),
+        th.Property("color", th.StringType),
+        th.Property("position", th.NumberType),
+        th.Property("createdAt", th.DateTimeType),
+        th.Property("updatedAt", th.DateTimeType),
+        th.Property("description", th.StringType),
+    ).to_dict()
+
+    primary_keys: t.ClassVar[list[str]] = ["id"]
+    replication_key = "updatedAt"
+    query = """
+        query WorkflowStates($next: String, $replicationKeyValue: DateTime) {
+            workflowStates(
+                first: 100
+                after: $next
+                filter: { updatedAt: { gt: $replicationKeyValue } }
+            ) {
+                nodes {
+                        id
+                        color
+                        createdAt
+                        description
+                        name
+                        position
+                        type
+                        updatedAt
+                }
+                pageInfo {
+                        hasNextPage
+                        endCursor
+                }
+            }
+        }
+    """
