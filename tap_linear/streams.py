@@ -336,6 +336,8 @@ class UsersStream(LinearStream):
                 first: 100
                 after: $next
                 filter: { updatedAt: { gt: $replicationKeyValue } }
+                includeArchived: true
+                includeDisabled: true
             ) {
                 nodes {
                     id
@@ -380,6 +382,7 @@ class WorkflowStateStream(LinearStream):
                 first: 100
                 after: $next
                 filter: { updatedAt: { gt: $replicationKeyValue } }
+                includeArchived: true
             ) {
                 nodes {
                         id
