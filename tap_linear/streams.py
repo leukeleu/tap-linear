@@ -184,6 +184,7 @@ class IssuesStream(LinearStream):
                 first: 35
                 after: $next
                 filter: { updatedAt: { gt: $replicationKeyValue } }
+                includeArchived: true
             ) {
                 nodes {
                     id
