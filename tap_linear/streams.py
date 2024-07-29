@@ -1,17 +1,19 @@
-"""Stream type classes for tap-linear."""
-
 from __future__ import annotations
 
 import typing as t
 
-from singer_sdk import typing as th  # JSON Schema typing helpers
+from singer_sdk import typing as th
 
 from tap_linear.client import LinearStream
 
+UserType = th.ObjectType(
+    th.Property("id", th.StringType),
+    th.Property("name", th.StringType),
+    th.Property("email", th.StringType),
+)
+
 
 class CyclesStream(LinearStream):
-    """Cycle stream."""
-
     name = "cycles"
     schema = th.PropertiesList(
         th.Property("id", th.StringType),
@@ -36,40 +38,28 @@ class CyclesStream(LinearStream):
                 th.ObjectType(
                     th.Property("id", th.StringType),
                     th.Property("identifier", th.StringType),
-                ),
+                )
             ),
         ),
     ).to_dict()
-
     primary_keys: t.ClassVar[list[str]] = ["id"]
     replication_key = "updatedAt"
-    query = """
-        query Cycles($next: String, $replicationKeyValue: DateTime) {
-            cycles(
-                first: 100
-                after: $next
-                filter: { updatedAt: { gt: $replicationKeyValue } }
-            ) {
+
+    def get_query(self, context: t.Optional[dict] = None) -> str:
+        return """
+        query Cycles($after: String, $filter: CycleFilter) {
+            cycles(first: 100, after: $after, filter: $filter) {
                 nodes {
                     id
                     name
                     description
-                    team {
-                        id
-                        name
-                        key
-                    }
+                    team { id name key }
                     startsAt
                     endsAt
                     progress
                     updatedAt
                     completedAt
-                    uncompletedIssuesUponClose {
-                      nodes {
-                            id
-                            identifier
-                        }
-                    }
+                    uncompletedIssuesUponClose { nodes { id identifier } }
                 }
                 pageInfo {
                     hasNextPage
@@ -77,19 +67,10 @@ class CyclesStream(LinearStream):
                 }
             }
         }
-    """
-
-
-UserType = th.ObjectType(
-    th.Property("id", th.StringType),
-    th.Property("name", th.StringType),
-    th.Property("email", th.StringType),
-)
+        """
 
 
 class IssuesStream(LinearStream):
-    """Issues stream."""
-
     name = "issues"
     schema = th.PropertiesList(
         th.Property("id", th.StringType),
@@ -97,7 +78,6 @@ class IssuesStream(LinearStream):
         th.Property("title", th.StringType),
         th.Property("description", th.StringType),
         th.Property("priority", th.NumberType),
-        th.Property("type", th.StringType),
         th.Property(
             "state",
             th.ObjectType(
@@ -111,12 +91,7 @@ class IssuesStream(LinearStream):
         th.Property("updatedAt", th.DateTimeType),
         th.Property("completedAt", th.DateTimeType),
         th.Property("archivedAt", th.DateTimeType),
-        th.Property(
-            "cycle",
-            th.ObjectType(
-                th.Property("id", th.StringType),
-            ),
-        ),
+        th.Property("cycle", th.ObjectType(th.Property("id", th.StringType))),
         th.Property("assignee", UserType),
         th.Property("creator", UserType),
         th.Property(
@@ -149,7 +124,7 @@ class IssuesStream(LinearStream):
                     th.Property("id", th.StringType),
                     th.Property("name", th.StringType),
                     th.Property("color", th.StringType),
-                ),
+                )
             ),
         ),
         th.Property(
@@ -160,10 +135,7 @@ class IssuesStream(LinearStream):
                     th.Property("createdAt", th.DateTimeType),
                     th.Property("updatedAt", th.DateTimeType),
                     th.Property(
-                        "issue",
-                        th.ObjectType(
-                            th.Property("id", th.StringType),
-                        ),
+                        "issue", th.ObjectType(th.Property("id", th.StringType))
                     ),
                     th.Property("actor", UserType),
                     th.Property("fromCycleId", th.StringType),
@@ -171,89 +143,49 @@ class IssuesStream(LinearStream):
                     th.Property("toAssigneeId", th.StringType),
                     th.Property("fromStateId", th.StringType),
                     th.Property("toStateId", th.StringType),
-                ),
+                )
             ),
         ),
     ).to_dict()
-
     primary_keys: t.ClassVar[list[str]] = ["id"]
     replication_key = "updatedAt"
-    query = """
-        query Issues($next: String, $replicationKeyValue: DateTime) {
-            issues(
-                first: 35
-                after: $next
-                filter: { updatedAt: { gt: $replicationKeyValue } }
-                includeArchived: true
-            ) {
+
+    def get_query(self, context: t.Optional[dict] = None) -> str:
+        return """
+        query Issues($after: String, $filter: IssueFilter) {
+            issues(first: 35, after: $after, filter: $filter, includeArchived: true) {
                 nodes {
                     id
                     identifier
                     title
                     description
                     priority
-                    state {
-                        id
-                        name
-                        type
-                    }
+                    state { id name type }
                     estimate
                     createdAt
                     updatedAt
                     completedAt
                     archivedAt
-                    cycle {
+                    cycle { id }
+                    assignee { id name email }
+                    creator { id name email }
+                    team { id name key }
+                    project { id name }
+                    parent { id title }
+                    labels { nodes { id name color } }
+                    history { nodes {
                         id
-                    }
-                    assignee {
-                        id
-                        name
-                        email
-                    }
-                    creator {
-                        id
-                        name
-                        email
-                    }
-                    team {
-                        id
-                        name
-                        key
-                    }
-                    project {
-                        id
-                        name
-                    }
-                    parent {
-                        id
-                        title
-                    }
-                    labels {
-                        nodes {
-                            id
-                            name
-                            color
-                        }
-                    }
-                    history {
-                        nodes {
-                            id
-                            createdAt
-                            updatedAt
-                            issue {
-                                id
-                            }
-                            actor {
-                                id
-                            }
-                            fromCycleId
-                            toCycleId
-                            fromAssigneeId
-                            toAssigneeId
-                            fromStateId
-                            toStateId
-                        }
-                    }
+                        createdAt
+                        updatedAt
+                        issue { id }
+                        actor { id }
+                        fromCycleId
+                        toCycleId
+                        fromAssigneeId
+                        toAssigneeId
+                        fromStateId
+                        toStateId
+                    } }
                 }
                 pageInfo {
                     hasNextPage
@@ -261,47 +193,32 @@ class IssuesStream(LinearStream):
                 }
             }
         }
-    """
+        """
 
 
 class CommentStream(LinearStream):
-    """Comment stream."""
-
     name = "comments"
     schema = th.PropertiesList(
         th.Property("id", th.StringType),
         th.Property("createdAt", th.DateTimeType),
         th.Property("updatedAt", th.DateTimeType),
         th.Property("user", UserType),
-        th.Property(
-            "issue",
-            th.ObjectType(
-                th.Property("id", th.StringType),
-            ),
-        ),
+        th.Property("issue", th.ObjectType(th.Property("id", th.StringType))),
+        th.Property("body", th.StringType),
     ).to_dict()
-
     primary_keys: t.ClassVar[list[str]] = ["id"]
     replication_key = "updatedAt"
-    query = """
-        query Comments($next: String, $replicationKeyValue: DateTime) {
-            comments(
-                first: 100
-                after: $next
-                filter: { updatedAt: { gt: $replicationKeyValue } }
-            ) {
+
+    def get_query(self, context: t.Optional[dict] = None) -> str:
+        return """
+        query Comments($after: String, $filter: CommentFilter) {
+            comments(first: 100, after: $after, filter: $filter) {
                 nodes {
                     id
                     createdAt
                     updatedAt
-                    user {
-                        id
-                        name
-                        email
-                    }
-                    issue {
-                        id
-                    }
+                    user { id name email }
+                    issue { id }
                     body
                 }
                 pageInfo {
@@ -310,12 +227,10 @@ class CommentStream(LinearStream):
                 }
             }
         }
-    """
+        """
 
 
 class UsersStream(LinearStream):
-    """Users stream."""
-
     name = "users"
     schema = th.PropertiesList(
         th.Property("id", th.StringType),
@@ -328,18 +243,13 @@ class UsersStream(LinearStream):
         th.Property("lastSeen", th.DateTimeType),
         th.Property("name", th.StringType),
     ).to_dict()
-
     primary_keys: t.ClassVar[list[str]] = ["id"]
     replication_key = "updatedAt"
-    query = """
-        query Users($next: String, $replicationKeyValue: DateTime) {
-            users(
-                first: 100
-                after: $next
-                filter: { updatedAt: { gt: $replicationKeyValue } }
-                includeArchived: true
-                includeDisabled: true
-            ) {
+
+    def get_query(self, context: t.Optional[dict] = None) -> str:
+        return """
+        query Users($after: String, $filter: UserFilter) {
+            users(first: 100, after: $after, filter: $filter, includeArchived: true, includeDisabled: true) {
                 nodes {
                     id
                     active
@@ -357,12 +267,10 @@ class UsersStream(LinearStream):
                 }
             }
         }
-    """
+        """
 
 
 class WorkflowStateStream(LinearStream):
-    """Workflow state stream."""
-
     name = "workflowStates"
     schema = th.PropertiesList(
         th.Property("id", th.StringType),
@@ -374,31 +282,27 @@ class WorkflowStateStream(LinearStream):
         th.Property("updatedAt", th.DateTimeType),
         th.Property("description", th.StringType),
     ).to_dict()
-
     primary_keys: t.ClassVar[list[str]] = ["id"]
     replication_key = "updatedAt"
-    query = """
-        query WorkflowStates($next: String, $replicationKeyValue: DateTime) {
-            workflowStates(
-                first: 100
-                after: $next
-                filter: { updatedAt: { gt: $replicationKeyValue } }
-                includeArchived: true
-            ) {
+
+    def get_query(self, context: t.Optional[dict] = None) -> str:
+        return """
+        query WorkflowStates($after: String, $filter: WorkflowStateFilter) {
+            workflowStates(first: 100, after: $after, filter: $filter, includeArchived: true) {
                 nodes {
-                        id
-                        color
-                        createdAt
-                        description
-                        name
-                        position
-                        type
-                        updatedAt
+                    id
+                    color
+                    createdAt
+                    description
+                    name
+                    position
+                    type
+                    updatedAt
                 }
                 pageInfo {
-                        hasNextPage
-                        endCursor
+                    hasNextPage
+                    endCursor
                 }
             }
         }
-    """
+        """
